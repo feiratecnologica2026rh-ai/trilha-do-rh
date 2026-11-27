@@ -2,11 +2,14 @@
 
 Jogo de tabuleiro educativo baseado na **NR-1**, para jogar no celular, tablet ou computador.
 
-- **Jogar neste aparelho:** de 1 a 3 jogadores passando o aparelho. Funciona **sem internet** e sem login. É o plano B se o Wi-Fi da feira falhar.
-- **Jogar online:** de 1 a 3 jogadores, cada um no seu celular, com sala, código, link e QR Code. Usa login com Google ou o modo Visitante (apenas nome).
+- **Jogar:** de 1 a 3 jogadores passando o aparelho, com **tabuleiro 3D** (trabalhadores com EPI no lugar dos pinos) ou 2D. Funciona **sem internet** e sem login.
+- **Ranking de jogadores:** campeões do dia, critérios de desempate e explicação de cada posição. Fica **salvo no próprio aparelho**.
 - **150 cartas** de múltipla escolha: as 30 oficiais e mais 120 extras, com 30 por categoria. Ficam em [`src/data/cards.ts`](src/data/cards.ts).
 
-Tecnologias: React, Vite, TypeScript, Tailwind CSS, Lucide Icons e Firebase (Authentication e Realtime Database). A hospedagem é gratuita, no GitHub Pages.
+> **Modo online desativado.** O projeto Firebase foi suspenso pelo Google, então o jogo online (salas com código e QR Code) e o ranking compartilhado foram retirados da tela. O código continua em `src/screens/OnlineRoom.tsx` e `src/lib/rooms.ts`. Para religar com um projeto Firebase novo: siga a seção 2, volte as telas em `src/App.tsx` / `src/screens/Home.tsx` e troque `SHARED` para `firebaseReady` em `src/lib/ranking.ts`.
+> **Na feira, use sempre o mesmo aparelho** (ou anote os resultados), porque o ranking de cada aparelho é separado.
+
+Tecnologias: React, Vite, TypeScript, Tailwind CSS, Lucide Icons e Three.js. O Firebase (Authentication e Realtime Database) só é usado pelo modo online, que está desativado. A hospedagem é gratuita, no GitHub Pages.
 
 ---
 
@@ -30,9 +33,11 @@ Tecnologias: React, Vite, TypeScript, Tailwind CSS, Lucide Icons e Firebase (Aut
 
    Errou a carta de uma casa especial? O peão fica onde está. A casa alcançada pelo bônus de +1 não aplica um novo efeito, mas, se ela for a casa 20, o jogador vence.
 7. **Tempo da partida (opcional: Livre, 5, 10 ou 15 minutos):** quando o tempo acaba, vence quem estiver na casa mais avançada. O desempate é por pontos.
-8. **Pontos e Ranking:** cada carta acertada vale pontos conforme a dificuldade: **Fácil = 1**, **Médio = 2**, **Difícil = 3**. O nível aparece no topo de cada carta.
+8. **Pontos e Ranking:** cada carta acertada vale pontos conforme a dificuldade: **Fácil = 1**, **Médio = 2**, **Difícil = 3**. O nível aparece no topo de cada carta. **Quem chega à casa 20 ganha +10 pontos.**
    - Ao fim da partida, aparece o **pódio dos 3 primeiros** (em grupo) ou a sua pontuação (sozinho).
-   - A pontuação é salva no **Ranking de jogadores**, separado em *Sozinho* e *Em grupo*, com filtro *Hoje* e *Todos*.
+   - A pontuação é salva no **Ranking de jogadores**, com as abas *Geral* (todos), *Sozinho* e *Em grupo* e o filtro *Hoje* / *Todos*. Na aba **Geral + Hoje** fica o **campeão do dia**. A tela se atualiza sozinha a cada 30 segundos.
+   - **Desempate**, nesta ordem: 1) mais pontos; 2) mais cartas certas; 3) menor tempo médio por resposta (respondeu mais rápido); 4) chegou ao final; 5) jogou primeiro.
+   - **Toque no nome** de um colocado para ver os critérios dele e o motivo da posição (ex.: "empatou em pontos com Ana; ficou à frente por ter respondido mais rápido (12,0 s × 18,4 s)").
    - Com o Firebase configurado, o ranking é **compartilhado** entre todos os aparelhos. Sem Firebase ou sem internet, ele fica salvo no próprio aparelho.
    - A dificuldade de cada carta fica nas listas `FACIL` e `DIFICIL`, no início de [`src/data/cards.ts`](src/data/cards.ts). As cartas que não estão nessas listas são *Médio*.
 
@@ -62,8 +67,7 @@ Abra o endereço que aparecer (algo como `http://localhost:5173`). O modo **"Jog
 ### 2.2 Ativar o login
 1. No menu, vá em **Criação → Authentication → Vamos começar**.
 2. Na aba **Método de login**, ative:
-   - **Google**: escolha o e-mail de suporte e salve.
-   - **Anônimo**: é usado pelo modo "Visitante rápido" e para salvar no ranking as partidas jogadas no modo "Jogar neste aparelho".
+   - **Anônimo**: é o que permite entrar só com o nome no modo online e salvar no ranking as partidas do modo "Jogar neste aparelho". (O login com Google foi retirado do jogo.)
 
 ### 2.3 Criar o banco de dados (Realtime Database)
 1. No menu, vá em **Criação → Realtime Database → Criar banco de dados**.
@@ -71,7 +75,7 @@ Abra o endereço que aparecer (algo como `http://localhost:5173`). O modo **"Jog
 3. Abra a aba **Regras**, apague tudo, cole o conteúdo do arquivo [`database.rules.json`](database.rules.json) e clique em **Publicar**.
 
 Essas regras garantem que:
-- apenas usuários logados (Google ou Visitante) acessam as salas;
+- apenas quem entrou com o nome acessa as salas;
 - cada sala tem **no máximo 3 vagas** (`players/0`, `players/1` e `players/2`);
 - só se entra na sala enquanto ela está no lobby;
 - o **ranking** pode ser lido por todos, e cada pessoa só adiciona os próprios resultados, sem editar nem apagar os dos outros;
@@ -97,7 +101,7 @@ VITE_FIREBASE_APP_ID=1:123456789:web:abc123
 > O `databaseURL` aparece no topo da página do Realtime Database.
 > Essas chaves **não são senhas**: elas sempre ficam visíveis no site. Quem protege os dados são as regras do passo 2.3.
 
-Rode `npm run dev` de novo. O botão **Entrar com Google** já deve funcionar no `localhost`.
+Rode `npm run dev` de novo. A entrada pelo nome no modo online já deve funcionar no `localhost`.
 
 ---
 
@@ -140,7 +144,7 @@ Depois, em **Settings → Pages**, escolha **Deploy from a branch**, depois a br
 1. No Firebase, vá em **Authentication → Configurações → Domínios autorizados → Adicionar domínio**.
 2. Adicione `SEU-USUARIO.github.io`, sem `https://` e sem o nome do repositório.
 
-Sem esse passo, o login com Google mostra o erro `auth/unauthorized-domain`.
+Sem esse passo, o Firebase pode recusar o site publicado com o erro `auth/unauthorized-domain`.
 
 ---
 
@@ -148,7 +152,7 @@ Sem esse passo, o login com Google mostra o erro `auth/unauthorized-domain`.
 
 - **Teste antes** com 3 celulares na rede do evento. Se a internet falhar, use **Jogar neste aparelho**.
 - **Telão:** abra o link da sala em um notebook ligado a uma TV. Se a sala estiver cheia ou a partida já tiver começado, ele entra **assistindo**, sem ocupar vaga.
-- O QR Code do lobby leva direto para a sala. Quem não quiser logar com Google pode usar **Visitante rápido**.
+- O QR Code do lobby leva direto para a sala. Basta digitar o nome para entrar.
 - Se alguém fechar o app durante a partida, basta abrir o mesmo link: a pessoa volta para a vaga dela. Se o criador da sala cair, os outros aparelhos continuam o jogo sozinhos.
 
 ## Estrutura do projeto
@@ -160,7 +164,7 @@ src/
   game/engine.ts        regras do jogo (funções puras, usadas no modo local e no online)
   game/types.ts         tipos do estado da partida
   lib/firebase.ts       inicialização do Firebase
-  lib/auth.tsx          login com Google e Visitante
+  lib/auth.tsx          entrada pelo nome (login anônimo do Firebase)
   lib/rooms.ts          salas online (criar, entrar, presença, transações)
   lib/ranking.ts        ranking de jogadores (Firebase ou no próprio aparelho)
   components/           tabuleiro, dado, carta, tela final…

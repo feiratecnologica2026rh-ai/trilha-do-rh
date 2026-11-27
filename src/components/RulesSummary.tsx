@@ -11,7 +11,7 @@ export function RulesSummary() {
         <li>Caiu numa casa colorida? Cumpra a instrução dela.</li>
         <li>Vence quem chegar primeiro à casa 20 (CHEGADA).</li>
         <li>
-          Cada carta acertada vale pontos para o <b>Ranking</b>: fácil = 1, médio = 2, difícil = 3.
+          Cada carta acertada vale pontos para o <b>Ranking</b>: fácil = 1, médio = 2, difícil = 3. Quem chega ao final ganha <b>+10</b>. Empate? Vence quem acertou mais cartas e, depois, quem respondeu mais rápido.
         </li>
       </ol>
       <div className="grid gap-1.5 text-sm">

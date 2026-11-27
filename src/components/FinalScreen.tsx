@@ -3,11 +3,17 @@ import { CARD_BY_ID, CATEGORY_INFO } from '../data/cards';
 import type { GameState } from '../game/types';
 import { Avatar } from './Avatar';
 import { Podium } from './Podium';
+import { compareRank, entriesFromGame } from '../lib/ranking';
 
 export function FinalScreen({ state, onExit, onPlayAgain }: { state: GameState; onExit: () => void; onPlayAgain?: () => void }) {
   if (state.phase.kind !== 'finished') return null;
   const { winners, reason } = state.phase;
-  const ranking = [...state.players].sort((a, b) => (b.points ?? 0) - (a.points ?? 0) || b.correct - a.correct || b.pos - a.pos);
+  // mesma ordem do Ranking do dia: pontos → acertos → mais rápido → chegou ao final
+  const entries = entriesFromGame(state);
+  const ranking = state.players
+    .map((p, i) => ({ p, e: entries[i] }))
+    .sort((a, b) => compareRank(a.e, b.e) || b.p.pos - a.p.pos)
+    .map((x) => x.p);
   const winnerNames = state.players.filter((p) => winners.includes(p.id)).map((p) => p.name);
   const solo = state.players.length === 1;
 
@@ -46,10 +52,10 @@ export function FinalScreen({ state, onExit, onPlayAgain }: { state: GameState; 
             </div>
           ) : (
             <Podium
-              items={ranking.map((p) => ({ key: p.id, name: p.name, points: p.points ?? 0, detail: `${p.correct}/${p.answered} acertos` }))}
+              items={ranking.map((p) => ({ key: p.id, name: p.name, points: p.points ?? 0, detail: `${p.correct}/${p.answered} acertos${p.finished ? ' · +10 chegada' : ''}` }))}
             />
           )}
-          <p className="mt-2 text-center text-xs font-bold text-marinho/60">Fácil = 1 ponto · Médio = 2 · Difícil = 3. Resultado salvo no Ranking.</p>
+          <p className="mt-2 text-center text-xs font-bold text-marinho/60">Fácil = 1 ponto · Médio = 2 · Difícil = 3 · Chegar ao final = +10. Resultado salvo no Ranking.</p>
           <ol className="grid gap-2 mt-3">
             {ranking.map((p, i) => (
               <li key={p.id} className="flex items-center gap-3 rounded-2xl bg-fundo px-3 py-2">
@@ -59,6 +65,7 @@ export function FinalScreen({ state, onExit, onPlayAgain }: { state: GameState; 
                 <span className="text-right text-sm font-bold text-marinho/70 leading-tight">
                   <span className="block font-black text-laranja">{p.points ?? 0} pts</span>
                   casa {p.pos} · {p.correct}/{p.answered}
+                  {p.finished && <span className="block text-azul">+10 chegada</span>}
                 </span>
               </li>
             ))}

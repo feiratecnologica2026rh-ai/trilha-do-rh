@@ -91,8 +91,13 @@ function nextTurn(s: GameState, now: number): GameState {
   return askQuestion(next, now, 'turn');
 }
 
+/** Bônus para quem chega à casa 20. */
+export const FINISH_BONUS = 10;
+
 function finishByArrival(s: GameState): GameState {
-  return { ...s, phase: { kind: 'finished', winners: [currentPlayer(s).id], reason: 'chegada' } };
+  const p = currentPlayer(s);
+  const done = updateCurrent(s, { finished: true, points: (p.points ?? 0) + FINISH_BONUS });
+  return { ...done, phase: { kind: 'finished', winners: [p.id], reason: 'chegada' } };
 }
 
 /** Fim por tempo: vence quem estiver mais à frente; desempate por pontos. */
@@ -188,10 +193,13 @@ function resolveAnswer(s: GameState, now: number, choice: number | null): GameSt
   const correct = choice === 0;
   const p = currentPlayer(s);
   const earned = correct ? CARD_BY_ID[ph.cardId].difficulty : 0;
+  // tempo que levou para responder (se o tempo acabou, conta o minuto inteiro)
+  const spent = Math.max(0, Math.min(now, ph.deadline) - ph.startedAt);
   let next = updateCurrent(s, {
     answered: p.answered + 1,
     correct: p.correct + (correct ? 1 : 0),
     points: (p.points ?? 0) + earned,
+    answerMs: (p.answerMs ?? 0) + spent,
   });
   next = { ...next, history: [...next.history, { cardId: ph.cardId, playerId: p.id, correct }] };
 

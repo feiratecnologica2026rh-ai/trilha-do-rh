@@ -20,8 +20,12 @@ export interface Player extends PlayerSeed {
   pos: number;
   correct: number;
   answered: number;
-  /** pontos: 1 (fácil), 2 (médio) ou 3 (difícil) por carta acertada */
+  /** pontos: 1 (fácil), 2 (médio) ou 3 (difícil) por carta acertada, +10 ao chegar ao final */
   points: number;
+  /** tempo total gasto respondendo as cartas (ms); usado no desempate */
+  answerMs?: number;
+  /** chegou à casa 20 */
+  finished?: boolean;
 }
 
 export interface HistoryItem {
