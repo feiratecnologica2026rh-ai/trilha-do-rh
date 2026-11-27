@@ -44,7 +44,7 @@ export function CardModal({ phase, player, canAct, now, onAnswer, onRoll, onCont
             <span className="opacity-80">Carta {card.id}</span>
           </div>
           <div className="mt-1 flex items-center justify-between gap-2">
-            <span className="text-sm font-bold opacity-90">{canAct ? 'Sua vez' : `Vez de ${player.name}`}</span>
+            <span className="min-w-0 truncate text-base font-black">Vez de {player.name}</span>
             <span className="rounded-full bg-white px-2.5 py-0.5 text-xs font-black" style={{ color: diff.color }}>
               {diff.name} · {pts} {pts === 1 ? 'ponto' : 'pontos'}
             </span>
