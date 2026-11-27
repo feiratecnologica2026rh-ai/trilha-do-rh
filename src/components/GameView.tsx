@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Check, LogOut, Star, Timer, Volume2, VolumeX } from 'lucide-react';
+import { Suspense, lazy, useEffect, useRef, useState, type ReactNode } from 'react';
+import { Box, Check, LogOut, Square, Star, Timer, Volume2, VolumeX, Zap } from 'lucide-react';
 import { Board } from './Board';
 import { Dice } from './Dice';
 import { CardModal } from './CardModal';
@@ -24,6 +24,36 @@ interface Props {
   offlineIds?: string[];
 }
 
+const Board3D = lazy(() => import('./Board3D'));
+
+const store = {
+  get(k: string) {
+    try {
+      return localStorage.getItem(k);
+    } catch {
+      return null;
+    }
+  },
+  set(k: string, v: string) {
+    try {
+      localStorage.setItem(k, v);
+    } catch {
+      /* sem armazenamento: só não lembra a escolha */
+    }
+  },
+};
+
+function can3D() {
+  try {
+    const c = document.createElement('canvas');
+    return !!(c.getContext('webgl2') || c.getContext('webgl'));
+  } catch {
+    return false;
+  }
+}
+const HAS_3D = typeof document !== 'undefined' && can3D();
+const WEAK = typeof navigator !== 'undefined' && ((navigator.hardwareConcurrency || 4) <= 4 || Math.min(screen.width, screen.height) < 400);
+
 function fmt(ms: number) {
   const s = Math.max(0, Math.ceil(ms / 1000));
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
@@ -35,6 +65,8 @@ export function GameView({ state, now, canControl, onAction, onExit, onPlayAgain
   const myTurn = canControl(cur.id);
   const positions = state.players.map((_, i) => displayPos(state, i, now));
   const [muted, setMutedState] = useState(isMuted());
+  const [view3d, setView3d] = useState(() => HAS_3D && store.get('trilha:view') !== '2d');
+  const [lite, setLite] = useState(() => (store.get('trilha:lite') ?? (WEAK ? '1' : '0')) === '1');
 
   // sons ligados às mudanças de fase
   const lastKey = useRef('');
@@ -105,16 +137,57 @@ export function GameView({ state, now, canControl, onAction, onExit, onPlayAgain
       </header>
 
       <main className="flex-1 w-full max-w-5xl mx-auto px-3 sm:px-4 py-3 grid gap-3 lg:grid-cols-[1fr_300px] lg:items-start">
-        <section className="relative rounded-3xl bg-white shadow-sm p-2 sm:p-4">
-          <Board players={state.players} positions={positions} turn={state.turn} showTurn />
+        <section className={`relative rounded-3xl shadow-sm overflow-hidden ${view3d ? 'bg-[#040a14] aspect-[4/5] sm:aspect-[5/4] max-h-[72dvh] w-full' : 'bg-white p-2 sm:p-4'}`}>
+          {view3d ? (
+            <Suspense fallback={<div className="absolute inset-0 grid place-items-center font-black text-white/60">Carregando o 3D…</div>}>
+              <Board3D
+                lite={lite}
+                players={state.players.map((p) => ({ id: p.id, name: p.name, color: PAWN_COLORS[p.color].hex }))}
+                positions={positions}
+                turn={state.turn}
+                moving={ph.kind === 'moving'}
+                round={Math.ceil(state.turnCount / state.players.length)}
+              />
+            </Suspense>
+          ) : (
+            <Board players={state.players} positions={positions} turn={state.turn} showTurn />
+          )}
+
+          {/* botões do tabuleiro */}
+          {HAS_3D && (
+            <div className="absolute top-2 right-2 z-10 flex gap-1.5">
+              {view3d && (
+                <button
+                  onClick={() => {
+                    setLite(!lite);
+                    store.set('trilha:lite', lite ? '0' : '1');
+                  }}
+                  className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-black backdrop-blur ${lite ? 'bg-amarelo text-marinho' : 'bg-white/15 text-white'}`}
+                  aria-pressed={lite}
+                  title="Modo leve: menos brilho, mais rápido em celulares simples"
+                >
+                  <Zap size={13} /> Leve
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  setView3d(!view3d);
+                  store.set('trilha:view', view3d ? '2d' : '3d');
+                }}
+                className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-black backdrop-blur ${view3d ? 'bg-white/15 text-white' : 'bg-marinho text-white'}`}
+              >
+                {view3d ? <Square size={13} /> : <Box size={13} />} {view3d ? '2D' : '3D'}
+              </button>
+            </div>
+          )}
 
           {/* dado e avisos sobre o tabuleiro */}
           {ph.kind === 'moving' && (
-            <div className="pointer-events-none absolute inset-0 grid place-items-center">
-              <div className="animate-pop flex flex-col items-center gap-2 rounded-3xl bg-white/92 px-6 py-4 shadow-xl">
-                {ph.dice !== null && <Dice value={diceRolling ? fakeFace : ph.dice} rolling={diceRolling} size={84} />}
+            <div className={`pointer-events-none absolute inset-0 grid ${view3d ? 'place-items-start justify-center pt-3' : 'place-items-center'}`}>
+              <div className={`animate-pop flex items-center gap-2 rounded-3xl bg-white/92 shadow-xl ${view3d ? 'flex-row px-3 py-2' : 'flex-col px-6 py-4'}`}>
+                {ph.dice !== null && <Dice value={diceRolling ? fakeFace : ph.dice} rolling={diceRolling} size={view3d ? 48 : 84} />}
                 {!diceRolling && (
-                  <div className="text-center font-black text-lg max-w-[240px]">
+                  <div className={`text-center font-black max-w-[240px] ${view3d ? 'text-base' : 'text-lg'}`}>
                     {ph.banner ?? `${cur.name} tirou ${ph.dice}!`}
                   </div>
                 )}

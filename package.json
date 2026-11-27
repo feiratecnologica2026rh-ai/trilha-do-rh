@@ -14,12 +14,14 @@
     "lucide-react": "^0.460.0",
     "qrcode.react": "^4.1.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "three": "^0.160.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.11",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
+    "@types/three": "^0.160.0",
     "@vitejs/plugin-react": "^4.3.4",
     "gh-pages": "^6.2.0",
     "tailwindcss": "^4.1.11",
